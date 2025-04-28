@@ -78,29 +78,29 @@
 #include <Wire.h>
 #include <Adafruit_MPU9250.h>
 
-Adafruit_MPU9250 mpu;  // Create sensor object
+Adafruit_MPU9250 mpu;
 
 void setup() {
     Serial.begin(115200);
-    Wire.begin(); // SDA = 21, SCL = 22 for ESP32
-    delay(2000);  // Let MPU9250 power up
+    Wire.begin(); // ESP32 default: SDA = 21, SCL = 22
+    delay(2000);  // Allow sensor startup time
 
     if (!mpu.begin()) {
-        Serial.println("MPU9250 connection failed. Check wiring or address!");
-        while (1); // Stop here if sensor not found
+        Serial.println("Failed to find MPU9250 chip");
+        while (1) { delay(10); }
     }
 
-    Serial.println("MPU9250 is ready!");
+    Serial.println("MPU9250 ready!");
 }
 
 void loop() {
-    sensors_event_t accel_event, gyro_event, mag_event, temp_event;
+    sensors_event_t accel_event, gyro_event, mag_event;
 
-    // Get fresh sensor events
-    mpu.getEvent(&accel_event, &gyro_event, &mag_event, &temp_event);
+    // Only 3 arguments: accel, gyro, mag
+    mpu.getEvent(&accel_event, &gyro_event, &mag_event);
 
     // Accelerometer (m/s^2)
-    Serial.print("Accel (m/s^2): ");
+    Serial.print("Accel (m/s^2):");
     Serial.print(accel_event.acceleration.x, 3); Serial.print(", ");
     Serial.print(accel_event.acceleration.y, 3); Serial.print(", ");
     Serial.print(accel_event.acceleration.z, 3);
@@ -120,13 +120,12 @@ void loop() {
     Serial.print(mag_event.magnetic.z, 3);
     Serial.print(" | ");
 
-    // Orientation placeholder (simple, based on accelerometer)
-    // More accurate Yaw/Pitch/Roll would need sensor fusion
+    // Pitch & Roll from accelerometer
     float pitch = atan2(accel_event.acceleration.y, accel_event.acceleration.z) * 180.0 / PI;
-    float roll  = atan2(-accel_event.acceleration.x, sqrt(accel_event.acceleration.y * accel_event.acceleration.y + accel_event.acceleration.z * accel_event.acceleration.z)) * 180.0 / PI;
-    
+    float roll  = atan2(-accel_event.acceleration.x, sqrt(pow(accel_event.acceleration.y,2) + pow(accel_event.acceleration.z,2))) * 180.0 / PI;
+
     Serial.print("YPR (deg): ");
-    Serial.print(0.0); Serial.print(", "); // Yaw requires magnetometer+fusion (not calculated here)
+    Serial.print(0.0); Serial.print(", ");  // Yaw = 0 (no fusion)
     Serial.print(pitch, 2); Serial.print(", ");
     Serial.println(roll, 2);
 
